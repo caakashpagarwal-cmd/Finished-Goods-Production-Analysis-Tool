@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finished Goods Production Analysis | Barflex Polyfilms</title>
+<script src="xlsx.full.min.js"></script>
+<style>
+:root{
+  --navy:#17324d;--gold:#b9943f;--blue:#2563a8;--green:#19764a;--red:#b9342a;--orange:#c96b18;
+  --ink:#1f2d3d;--muted:#687789;--line:#dce4ef;--soft:#f3f6fa;--card:#fff;
+}
+*{box-sizing:border-box} body{margin:0;background:var(--soft);color:var(--ink);font:13px/1.45 "Segoe UI",Arial,sans-serif}
+.hdr{background:var(--navy);color:#fff;padding:15px 22px;border-bottom:3px solid var(--gold);display:flex;justify-content:space-between;gap:18px;align-items:center}
+.hdr h1{margin:0;font-size:18px;letter-spacing:.2px}.hdr p{margin:3px 0 0;color:#d7e0eb;font-size:11px}.firm{text-align:right;font-size:11px;color:#d7e0eb}.firm strong{display:block;color:#f1d999;font-size:13px}
+.main{padding:18px 22px;max-width:1440px;margin:auto}.grid{display:grid;gap:14px}.g2{grid-template-columns:1fr 1fr}.g4{grid-template-columns:repeat(4,1fr)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:15px 17px;margin-bottom:14px;box-shadow:0 2px 10px rgba(23,50,77,.07)}
+.title{font-size:12px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.45px;border-bottom:2px solid var(--gold);padding-bottom:7px;margin-bottom:12px;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.toolbar{display:flex;gap:7px;flex-wrap:wrap}.upload{border:2px dashed var(--gold);background:#fffdf5;border-radius:8px;text-align:center;padding:28px;cursor:pointer}
+.upload:hover{background:#fff7de}.upload h2{margin:0 0 6px;color:var(--navy);font-size:15px}.upload p{margin:0;color:var(--muted);font-size:11.5px}
+.btn{border:0;border-radius:6px;padding:7px 12px;font-weight:800;font-size:11px;cursor:pointer;color:#fff;background:var(--navy)}.btn:hover{filter:brightness(.92)}
+.btn.green{background:var(--green)}.btn.gold{background:var(--gold)}.btn.blue{background:var(--blue)}.btn.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+.kpi{border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:8px;background:#fff;padding:12px}.kpi.green{border-left-color:var(--green)}.kpi.gold{border-left-color:var(--gold)}.kpi.orange{border-left-color:var(--orange)}
+.kl{font-size:9.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.45px}.kv{font-size:21px;font-weight:800;color:var(--navy);margin-top:3px}.ks{font-size:10.5px;color:var(--muted)}
+.tw{overflow:auto}table{width:100%;border-collapse:collapse;font-size:11.2px}th{background:var(--navy);color:#fff;text-align:left;padding:7px 8px;white-space:nowrap}th.r,td.r{text-align:right}td{border-bottom:1px solid #edf1f6;padding:6px 8px;white-space:nowrap}tr:hover td{background:#f7f9fd}tr.total td{background:var(--navy);color:#fff;font-weight:800}
+.chart svg{width:100%;height:auto;display:block}.hint{font-size:11px;color:var(--muted)}.status{font-size:12px;color:var(--green);font-weight:800;margin-top:8px}.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+label{font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px}select,input{border:1px solid var(--line);border-radius:5px;padding:6px 8px;background:#fff;color:var(--ink);min-width:160px}
+.alert{border-left:4px solid var(--gold);background:#fff8df;border-radius:6px;padding:9px 11px;margin:7px 0;font-size:11.8px}.alert.red{border-left-color:var(--red);background:#feeceb}.alert.green{border-left-color:var(--green);background:#eaf8f0}
+@media(max-width:900px){.g2,.g4{grid-template-columns:1fr}.hdr{display:block}.firm{text-align:left;margin-top:8px}.main{padding:14px}}
+</style>
+</head>
+<body>
+<header class="hdr">
+  <div><h1>Finished Goods Production Analysis</h1><p>FINISHED GOODS REPORT - Daily production, target achievement, charts, tables, insights and export workbook</p></div>
+  <div class="firm"><strong>Maars & Associates</strong>CA Akash Agarwal | 8799999935<br>Chartered Accountants, Surat</div>
+</header>
+
+<main class="main">
+  <section class="card">
+    <div class="title">Upload Finished Goods Register</div>
+    <div class="upload" onclick="document.getElementById('fgFile').click()">
+      <h2>Click to upload FINISHED GOODS REPORT-BARFLEX POLYFILMS.xlsx</h2>
+      <p>Expected sheet: PARAMJEET - DAILY PRODUCTION RE. The tool reads CO-EX, Laminate, PVC, WPP, roll/pouching totals and target variance columns.</p>
+    </div>
+    <input type="file" id="fgFile" accept=".xlsx,.xls" hidden onchange="loadFile(event)">
+    <div id="status" class="status"></div>
+  </section>
+
+  <section id="dashboard" style="display:none">
+    <div class="grid g4" id="kpis"></div>
+
+    <div class="grid g2">
+      <div class="card">
+        <div class="title">Production by Process <span class="toolbar"><button class="btn blue" onclick="exportChart('processChart','production_by_process','png')">PNG</button><button class="btn ghost" onclick="exportChartExcel('process')">Excel</button></span></div>
+        <div class="chart" id="processChart"></div>
+      </div>
+      <div class="card">
+        <div class="title">Roll vs Pouching Split <span class="toolbar"><button class="btn blue" onclick="exportChart('splitChart','roll_vs_pouching','png')">PNG</button><button class="btn ghost" onclick="exportChartExcel('split')">Excel</button></span></div>
+        <div class="chart" id="splitChart"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="title">Target Achievement <span class="toolbar"><button class="btn blue" onclick="exportChart('targetChart','target_achievement','png')">PNG</button><button class="btn ghost" onclick="exportChartExcel('target')">Excel</button></span></div>
+      <div class="chart" id="targetChart"></div>
+    </div>
+
+    <div class="card">
+      <div class="title">Monthly Production Trend - Individual Categories <span class="toolbar"><button class="btn blue" onclick="exportChart('trendChart','monthly_production_trend','png')">PNG</button><button class="btn ghost" onclick="exportChartExcel('trend')">Excel</button></span></div>
+      <div class="chart" id="trendChart"></div>
+    </div>
+
+    <div class="card" id="targetDetailCard">
+      <div class="title">Process-wise Target vs Actual Detail <span class="toolbar"><button class="btn green" onclick="exportTableImage('targetDetailCard','process_wise_target_actual_detail')">PNG</button><button class="btn ghost" onclick="exportTableExcel('targetTbl','process_wise_target_actual_detail')">Excel</button></span></div>
+      <div class="tw"><table id="targetTbl"><thead></thead><tbody></tbody></table></div>
+    </div>
+
+    <div class="card" id="varianceCard">
+      <div class="title">Daily Target Variance - Drill-down <span class="toolbar"><button class="btn green" onclick="exportTableImage('varianceCard','daily_target_variance_drilldown')">PNG</button><button class="btn ghost" onclick="exportTableExcel('varianceTbl','daily_target_variance_drilldown')">Excel</button></span></div>
+      <div class="filters">
+        <div><label>Month</label><select id="targetMonthFilter" onchange="renderTargetDrilldown()"></select></div>
+        <div><label>Process</label><select id="targetProcessFilter" onchange="renderTargetDrilldown()"><option value="coex">CO-EX</option><option value="lam">Laminate</option><option value="pvc">PVC</option><option value="wpp">WPP</option></select></div>
+      </div>
+      <div class="tw"><table id="varianceTbl"><thead></thead><tbody></tbody></table></div>
+    </div>
+
+    <div class="card" id="monthlyCard">
+      <div class="title">Month-wise Production Summary <span class="toolbar"><button class="btn green" onclick="exportTableImage('monthlyCard','monthly_production_summary')">PNG</button><button class="btn ghost" onclick="exportTableExcel('monthlyTbl','monthly_production_summary')">Excel</button></span></div>
+      <div class="tw"><table id="monthlyTbl"><thead></thead><tbody></tbody></table></div>
+    </div>
+
+    <div class="card" id="dailyCard">
+      <div class="title">Daily Production Detail <span class="toolbar"><button class="btn green" onclick="exportTableImage('dailyCard','daily_production_detail')">PNG</button><button class="btn ghost" onclick="exportTableExcel('dailyTbl','daily_production_detail')">Excel</button></span></div>
+      <div class="filters"><div><label>Month Filter</label><select id="monthFilter" onchange="renderDailyTable()"></select></div></div>
+      <div class="tw"><table id="dailyTbl"><thead></thead><tbody></tbody></table></div>
+    </div>
+
+    <div class="card">
+      <div class="title">Insights</div>
+      <div id="insights"></div>
+    </div>
+
+    <div class="card">
+      <div class="title">Download Centre</div>
+      <div class="filters">
+        <div><label>Client</label><input id="client" value="Barflex Polyfilms Pvt. Ltd."></div>
+        <div><label>Period Label</label><input id="period" value="FY 2025-26"></div>
+      </div>
+      <div class="toolbar">
+        <button class="btn green" onclick="exportMasterExcel()">Download Master Excel</button>
+        <button class="btn gold" onclick="exportAllCharts()">Download All Charts as Images</button>
+      </div>
+      <p class="hint">Excel export includes source rows, monthly summary, target achievement, chart data and insights. No separate narrative report is generated.</p>
+    </div>
+  </section>
+</main>
+
+<script>
+let FG=[], chartData={};
+const fmt=(n,d=0)=>isNaN(n)||n==null?"-":Number(n).toLocaleString("en-IN",{minimumFractionDigits:d,maximumFractionDigits:d});
+const pct=(n,d=1)=>isNaN(n)||n==null?"-":Number(n).toFixed(d)+"%";
+const n=v=>{const x=parseFloat(String(v??"").replace(/,/g,""));return isNaN(x)?0:x};
+const exDate=s=>{if(!s)return"";const d=s instanceof Date?s:new Date(Math.round((Number(s)-25569)*86400*1000));return isNaN(d) ? String(s) : d.toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})};
+const monthKey=s=>{const d=s instanceof Date?s:new Date(Math.round((Number(s)-25569)*86400*1000));return isNaN(d)?String(s):d.toLocaleString("en-IN",{month:"short",year:"numeric"})};
+const group=(arr,fn)=>arr.reduce((a,r)=>((a[fn(r)] ||= []).push(r),a),{});
+const sum=(arr,fn)=>arr.reduce((s,r)=>s+fn(r),0);
+const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+
+function loadFile(ev){
+  const file=ev.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const wb=XLSX.read(new Uint8Array(e.target.result),{type:"array",cellDates:false});
+    const sn=wb.SheetNames.find(s=>/paramjeet|production/i.test(s))||wb.SheetNames[0];
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{raw:true,defval:null});
+    FG=rows.filter(r=>r.DATE && !isNaN(parseFloat(r.DATE))).map(r=>({
+      date:r.DATE, coex_r:n(r["CO-EX (R)"]), lam_r:n(r["LAMINATE (R)"]), coex_p:n(r["CO-EX (P)"]), lam_p:n(r["LAMINATE (P)"]),
+      pvc:n(r["PLAIN FOR SALE (PVC)"])+n(r["PVC SLEEVES (PVC)"]), wpp:n(r["WPP BAGS"]),
+      tgt_coex:n(r["TARGET CO-EX"])||7000, tot_coex:n(r["TOTAL CO-EX"]), var_coex:n(r["VARIATION (CO-EX)"]),
+      tgt_lam:n(r["TARGET LAMINATE"])||15000, tot_lam:n(r["TOTAL LAMINATE"]), var_lam:n(r["VARIATION (LAMINATE)"]),
+      tgt_pvc:n(r["TARGET PVC"])||1500, tot_pvc:n(r["TOTAL PVC"]), var_pvc:n(r["VARIATION (PVC)"]),
+      tgt_wpp:n(r["TARGET WPP"])||2000, tot_wpp:n(r["TOTAL WPP"]), var_wpp:n(r["VARIATION (WPP)"]),
+      tot_pouch:n(r["TOTAL PRODUCTION POUCHING"]), tot_roll:n(r["TOTAL PRODUCTION ROLL"]),
+      avg_coex:n(r["AVG CO EX PRODUCTION"]), avg_lam:n(r["AVG LAMINATE PRODUCTION"]), avg_pvc:n(r["AVG PVC PRODUCTION"]), avg_wpp:n(r["AVG WPP PRODUCTION"])
+    }));
+    document.getElementById("status").textContent=`Loaded ${FG.length} production rows from "${sn}".`;
+    document.getElementById("dashboard").style.display="block";
+    renderAll();
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function renderAll(){renderKpis();renderCharts();renderMonthlyTable();populateMonths();renderDailyTable();renderTargetTables();renderTargetDrilldown();renderInsights()}
+
+function totals(data=FG){
+  const coex=sum(data,r=>r.coex_r+r.coex_p), lam=sum(data,r=>r.lam_r+r.lam_p), pvc=sum(data,r=>r.pvc), wpp=sum(data,r=>r.wpp);
+  const roll=sum(data,r=>r.tot_roll), pouch=sum(data,r=>r.tot_pouch);
+  return {coex,lam,pvc,wpp,roll,pouch,grand:coex+lam+pvc+wpp,days:data.filter(r=>r.tot_roll+r.tot_pouch>0).length};
+}
+
+function renderKpis(){
+  const t=totals();
+  document.getElementById("kpis").innerHTML=[
+    ["Total CO-EX",fmt(t.coex),"Roll + Pouching",""],["Total Laminate",fmt(t.lam),"Roll + Pouching","green"],
+    ["PVC + WPP",fmt(t.pvc+t.wpp),"Finished goods","orange"],["Grand Total",fmt(t.grand),`${t.days} production days`,"gold"]
+  ].map(x=>`<div class="kpi ${x[3]}"><div class="kl">${x[0]}</div><div class="kv">${x[1]}</div><div class="ks">${x[2]}</div></div>`).join("");
+}
+
+function barSvg(title,items,{suffix="",valueFmt=fmt,height=null,max=null}={}){
+  max=max||Math.max(...items.map(i=>i.value),1);
+  height=height||80+items.length*42;
+  const rows=items.map((i,idx)=>{
+    const y=58+idx*42, w=Math.max(2,i.value/max*560);
+    return `<text x="18" y="${y+14}" font-size="14" font-weight="800" fill="#1f2d3d">${esc(i.label)}</text>
+      <rect x="170" y="${y}" width="560" height="20" rx="4" fill="#e7edf5"/>
+      <rect x="170" y="${y}" width="${w}" height="20" rx="4" fill="${i.color}"/>
+      <text x="875" y="${y+14}" text-anchor="end" font-size="14" font-weight="800" fill="${i.color}">${esc(valueFmt(i.value))}${suffix}</text>`;
+  }).join("");
+  return `<svg viewBox="0 0 900 ${height}" xmlns="http://www.w3.org/2000/svg" role="img">
+    <rect width="900" height="${height}" fill="#fff"/>
+    <text x="18" y="27" font-size="16" font-weight="800" fill="#17324d">${esc(title)}</text>
+    <line x1="18" y1="40" x2="882" y2="40" stroke="#b9943f" stroke-width="2"/>
+    ${rows}
+  </svg>`;
+}
+
+function pieSvg(title,items){
+  const total=items.reduce((s,i)=>s+i.value,0)||1; let angle=-90, paths="";
+  items.forEach(i=>{const a=i.value/total*360,end=angle+a,large=a>180?1:0;
+    const p1=polar(155,120,88,angle), p2=polar(155,120,88,end);
+    paths+=`<path d="M155 120 L${p1.x} ${p1.y} A88 88 0 ${large} 1 ${p2.x} ${p2.y} Z" fill="${i.color}"/>`; angle=end;
+  });
+  const legend=items.map((i,k)=>`<rect x="310" y="${86+k*34}" width="14" height="14" rx="2" fill="${i.color}"/><text x="334" y="${98+k*34}" font-size="14" font-weight="700" fill="#1f2d3d">${esc(i.label)}: ${fmt(i.value)} (${pct(i.value/total*100,1)})</text>`).join("");
+  return `<svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg" role="img"><rect width="760" height="280" fill="#fff"/><text x="18" y="27" font-size="16" font-weight="800" fill="#17324d">${esc(title)}</text><line x1="18" y1="40" x2="742" y2="40" stroke="#b9943f" stroke-width="2"/><g transform="translate(0,35)">${paths}<circle cx="155" cy="120" r="42" fill="#fff"/><text x="155" y="116" text-anchor="middle" font-size="12" fill="#687789" font-weight="700">Total</text><text x="155" y="136" text-anchor="middle" font-size="15" fill="#17324d" font-weight="800">${fmt(total)}</text></g>${legend}</svg>`;
+}
+function polar(cx,cy,r,a){const rad=a*Math.PI/180;return{x:cx+r*Math.cos(rad),y:cy+r*Math.sin(rad)}}
+
+function renderCharts(){
+  const t=totals();
+  chartData.process=[["Process","Quantity"],["CO-EX",t.coex],["Laminate",t.lam],["PVC",t.pvc],["WPP Bags",t.wpp]];
+  chartData.split=[["Category","Quantity"],["Total ROLL",t.roll],["Total POUCHING",t.pouch]];
+  const ach=[
+    ["CO-EX",sum(FG,r=>r.tot_coex)/(sum(FG,r=>r.tgt_coex)||1)*100],
+    ["Laminate",sum(FG,r=>r.tot_lam)/(sum(FG,r=>r.tgt_lam)||1)*100],
+    ["PVC",sum(FG,r=>r.tot_pvc)/(sum(FG,r=>r.tgt_pvc)||1)*100],
+    ["WPP Bags",sum(FG,r=>r.tot_wpp)/(sum(FG,r=>r.tgt_wpp)||1)*100]
+  ];
+  chartData.target=[["Process","Achievement %"],...ach.map(a=>[a[0],+a[1].toFixed(2)])];
+  document.getElementById("processChart").innerHTML=barSvg("Production by Process",[
+    {label:"CO-EX",value:t.coex,color:"#2563a8"},{label:"Laminate",value:t.lam,color:"#17324d"},{label:"PVC",value:t.pvc,color:"#c96b18"},{label:"WPP Bags",value:t.wpp,color:"#b9943f"}]);
+  document.getElementById("splitChart").innerHTML=pieSvg("Roll vs Pouching Split",[{label:"Total ROLL",value:t.roll,color:"#17324d"},{label:"Total POUCHING",value:t.pouch,color:"#2563a8"}]);
+  document.getElementById("targetChart").innerHTML=barSvg("Target Achievement",ach.map(([label,value])=>({label,value,color:value>=100?"#19764a":value>=85?"#c96b18":"#b9342a"})),{suffix:"",valueFmt:v=>pct(v,1),max:Math.max(100,...ach.map(a=>a[1]))});
+  const trendRows=monthlyRows();
+  chartData.trend=[["Month","CO-EX","Laminate","PVC","WPP"],...trendRows.map(r=>[r.month,r.coex,r.lam,r.pvc,r.wpp])];
+  document.getElementById("trendChart").innerHTML=multiBarSvg("Monthly Production Trend - Individual Categories",trendRows,[
+    {key:"coex",label:"CO-EX",color:"#2563a8"},{key:"lam",label:"Laminate",color:"#17324d"},{key:"pvc",label:"PVC",color:"#c96b18"},{key:"wpp",label:"WPP",color:"#b9943f"}
+  ]);
+}
+
+function multiBarSvg(title,rows,series){
+  const max=Math.max(...rows.flatMap(r=>series.map(s=>r[s.key]||0)),1), groupH=series.length*24+28, height=70+rows.length*groupH;
+  const body=rows.map((r,ri)=>{
+    const y0=58+ri*groupH;
+    const bars=series.map((s,si)=>{const y=y0+22+si*24,w=Math.max(2,(r[s.key]||0)/max*500);return`<text x="126" y="${y+13}" text-anchor="end" font-size="11" font-weight="700" fill="#687789">${esc(s.label)}</text><rect x="142" y="${y}" width="500" height="16" rx="3" fill="#e7edf5"/><rect x="142" y="${y}" width="${w}" height="16" rx="3" fill="${s.color}"/><text x="812" y="${y+13}" text-anchor="end" font-size="12" font-weight="800" fill="${s.color}">${fmt(r[s.key])}</text>`}).join("");
+    return `<text x="18" y="${y0+12}" font-size="13" font-weight="800" fill="#17324d">${esc(r.month)}</text>${bars}`;
+  }).join("");
+  return `<svg viewBox="0 0 840 ${height}" xmlns="http://www.w3.org/2000/svg"><rect width="840" height="${height}" fill="#fff"/><text x="18" y="27" font-size="16" font-weight="800" fill="#17324d">${esc(title)}</text><line x1="18" y1="40" x2="822" y2="40" stroke="#b9943f" stroke-width="2"/>${body}</svg>`;
+}
+
+function monthlyRows(data=FG){
+  return Object.entries(group(data,r=>monthKey(r.date))).sort((a,b)=>new Date("1 "+a[0])-new Date("1 "+b[0])).map(([m,arr])=>{
+    const t=totals(arr); return {month:m,coex:t.coex,lam:t.lam,pvc:t.pvc,wpp:t.wpp,roll:t.roll,pouch:t.pouch,grand:t.grand,days:t.days};
+  });
+}
+function renderMonthlyTable(){
+  const rows=monthlyRows();
+  document.querySelector("#monthlyTbl thead").innerHTML="<tr><th>Month</th><th class='r'>CO-EX Total</th><th class='r'>Laminate Total</th><th class='r'>PVC Total</th><th class='r'>WPP Total</th><th class='r'>Total ROLL</th><th class='r'>Total POUCHING</th><th class='r'>Grand Total</th><th class='r'>Production Days</th></tr>";
+  const body=rows.map(r=>`<tr><td><b>${r.month}</b></td><td class="r">${fmt(r.coex)}</td><td class="r">${fmt(r.lam)}</td><td class="r">${fmt(r.pvc)}</td><td class="r">${fmt(r.wpp)}</td><td class="r">${fmt(r.roll)}</td><td class="r">${fmt(r.pouch)}</td><td class="r"><b>${fmt(r.grand)}</b></td><td class="r">${r.days}</td></tr>`).join("");
+  const t=totals();
+  document.querySelector("#monthlyTbl tbody").innerHTML=body+`<tr class="total"><td>TOTAL</td><td class="r">${fmt(t.coex)}</td><td class="r">${fmt(t.lam)}</td><td class="r">${fmt(t.pvc)}</td><td class="r">${fmt(t.wpp)}</td><td class="r">${fmt(t.roll)}</td><td class="r">${fmt(t.pouch)}</td><td class="r">${fmt(t.grand)}</td><td class="r">${t.days}</td></tr>`;
+}
+function populateMonths(){
+  const months=["",...new Set(FG.map(r=>monthKey(r.date)))];
+  document.getElementById("monthFilter").innerHTML=months.map(m=>`<option value="${esc(m)}">${m||"All Months"}</option>`).join("");
+  document.getElementById("targetMonthFilter").innerHTML=months.map(m=>`<option value="${esc(m)}">${m||"All Months"}</option>`).join("");
+}
+function renderDailyTable(){
+  const m=document.getElementById("monthFilter").value;
+  const data=m?FG.filter(r=>monthKey(r.date)===m):FG;
+  document.querySelector("#dailyTbl thead").innerHTML="<tr><th>Date</th><th class='r'>CO-EX Roll</th><th class='r'>Lam Roll</th><th class='r'>CO-EX Pouch</th><th class='r'>Lam Pouch</th><th class='r'>PVC</th><th class='r'>WPP</th><th class='r'>Total ROLL</th><th class='r'>Total POUCH</th><th class='r'>Grand Total</th></tr>";
+  const body=data.map(r=>`<tr><td>${exDate(r.date)}</td><td class="r">${fmt(r.coex_r)}</td><td class="r">${fmt(r.lam_r)}</td><td class="r">${fmt(r.coex_p)}</td><td class="r">${fmt(r.lam_p)}</td><td class="r">${fmt(r.pvc)}</td><td class="r">${fmt(r.wpp)}</td><td class="r"><b>${fmt(r.tot_roll)}</b></td><td class="r"><b>${fmt(r.tot_pouch)}</b></td><td class="r"><b>${fmt(r.tot_roll+r.tot_pouch)}</b></td></tr>`).join("");
+  const t=totals(data);
+  document.querySelector("#dailyTbl tbody").innerHTML=body+`<tr class="total"><td>TOTAL</td><td class="r">${fmt(sum(data,r=>r.coex_r))}</td><td class="r">${fmt(sum(data,r=>r.lam_r))}</td><td class="r">${fmt(sum(data,r=>r.coex_p))}</td><td class="r">${fmt(sum(data,r=>r.lam_p))}</td><td class="r">${fmt(t.pvc)}</td><td class="r">${fmt(t.wpp)}</td><td class="r">${fmt(t.roll)}</td><td class="r">${fmt(t.pouch)}</td><td class="r">${fmt(t.roll+t.pouch)}</td></tr>`;
+}
+
+function achBadge(v){
+  const cls=v>=100?"ok":v>=85?"near":"bad";
+  const bg=cls==="ok"?"#e8f6ef":cls==="near"?"#fff3d4":"#feeceb";
+  const color=cls==="ok"?"#19764a":cls==="near"?"#c96b18":"#b9342a";
+  return `<span style="display:inline-block;border-radius:10px;padding:2px 7px;font-size:10px;font-weight:800;background:${bg};color:${color}">${pct(v,1)}</span>`;
+}
+
+function statusBadge(v){
+  if(v>=100) return `<span style="display:inline-block;border-radius:10px;padding:2px 7px;font-size:10px;font-weight:800;background:#e8f6ef;color:#19764a">Met</span>`;
+  if(v>=85) return `<span style="display:inline-block;border-radius:10px;padding:2px 7px;font-size:10px;font-weight:800;background:#fff3d4;color:#c96b18">Near</span>`;
+  return `<span style="display:inline-block;border-radius:10px;padding:2px 7px;font-size:10px;font-weight:800;background:#feeceb;color:#b9342a">Missed</span>`;
+}
+
+function renderTargetTables(){
+  const rows=monthlyRows().map(r=>{
+    const arr=FG.filter(x=>monthKey(x.date)===r.month);
+    const tC=sum(arr,x=>x.tgt_coex), aC=sum(arr,x=>x.tot_coex);
+    const tL=sum(arr,x=>x.tgt_lam), aL=sum(arr,x=>x.tot_lam);
+    const tP=sum(arr,x=>x.tgt_pvc), aP=sum(arr,x=>x.tot_pvc);
+    const tW=sum(arr,x=>x.tgt_wpp), aW=sum(arr,x=>x.tot_wpp);
+    return {month:r.month,tC,aC,c:tC?aC/tC*100:0,tL,aL,l:tL?aL/tL*100:0,tP,aP,p:tP?aP/tP*100:0,tW,aW,w:tW?aW/tW*100:0};
+  });
+  document.querySelector("#targetTbl thead").innerHTML="<tr><th>Month</th><th class='r'>CO-EX Target</th><th class='r'>CO-EX Actual</th><th class='r'>CO-EX Ach%</th><th class='r'>Lam Target</th><th class='r'>Lam Actual</th><th class='r'>Lam Ach%</th><th class='r'>PVC Target</th><th class='r'>PVC Actual</th><th class='r'>PVC Ach%</th><th class='r'>WPP Target</th><th class='r'>WPP Actual</th><th class='r'>WPP Ach%</th></tr>";
+  document.querySelector("#targetTbl tbody").innerHTML=rows.map(r=>`<tr><td><b>${r.month}</b></td><td class="r">${fmt(r.tC)}</td><td class="r">${fmt(r.aC)}</td><td class="r">${achBadge(r.c)}</td><td class="r">${fmt(r.tL)}</td><td class="r">${fmt(r.aL)}</td><td class="r">${achBadge(r.l)}</td><td class="r">${fmt(r.tP)}</td><td class="r">${fmt(r.aP)}</td><td class="r">${achBadge(r.p)}</td><td class="r">${fmt(r.tW)}</td><td class="r">${fmt(r.aW)}</td><td class="r">${achBadge(r.w)}</td></tr>`).join("");
+}
+
+function renderTargetDrilldown(){
+  const m=document.getElementById("targetMonthFilter").value;
+  const proc=document.getElementById("targetProcessFilter").value;
+  const map={coex:{label:"CO-EX",t:"tgt_coex",a:"tot_coex",v:"var_coex"},lam:{label:"Laminate",t:"tgt_lam",a:"tot_lam",v:"var_lam"},pvc:{label:"PVC",t:"tgt_pvc",a:"tot_pvc",v:"var_pvc"},wpp:{label:"WPP",t:"tgt_wpp",a:"tot_wpp",v:"var_wpp"}};
+  const cfg=map[proc], data=m?FG.filter(r=>monthKey(r.date)===m):FG;
+  document.querySelector("#varianceTbl thead").innerHTML="<tr><th>Date</th><th class='r'>Target</th><th class='r'>Actual</th><th class='r'>Variation</th><th class='r'>Achievement %</th><th>Status</th></tr>";
+  document.querySelector("#varianceTbl tbody").innerHTML=data.map(r=>{
+    const ach=r[cfg.t]?r[cfg.a]/r[cfg.t]*100:0, variation=r[cfg.v];
+    return `<tr><td>${exDate(r.date)}</td><td class="r">${fmt(r[cfg.t])}</td><td class="r">${fmt(r[cfg.a])}</td><td class="r" style="color:${variation<0?"#b9342a":"#19764a"};font-weight:700">${variation>=0?"+":""}${fmt(variation)}</td><td class="r">${achBadge(ach)}</td><td>${statusBadge(ach)}</td></tr>`;
+  }).join("");
+}
+function renderInsights(){
+  const t=totals(), achCoex=sum(FG,r=>r.tot_coex)/(sum(FG,r=>r.tgt_coex)||1)*100, achLam=sum(FG,r=>r.tot_lam)/(sum(FG,r=>r.tgt_lam)||1)*100;
+  const zero=FG.filter(r=>r.tot_roll+r.tot_pouch===0).length;
+  const alerts=[];
+  alerts.push(`<div class="alert ${achCoex>=100?"green":achCoex<80?"red":""}"><b>CO-EX target achievement:</b> ${pct(achCoex,1)} against cumulative target.</div>`);
+  alerts.push(`<div class="alert ${achLam>=100?"green":achLam<80?"red":""}"><b>Laminate target achievement:</b> ${pct(achLam,1)} against cumulative target.</div>`);
+  alerts.push(`<div class="alert"><b>Product mix:</b> Roll output is ${pct(t.roll/(t.roll+t.pouch||1)*100,1)} and pouching output is ${pct(t.pouch/(t.roll+t.pouch||1)*100,1)} of recorded production.</div>`);
+  if(zero) alerts.push(`<div class="alert red"><b>Zero-production days:</b> ${zero} day(s) need classification as planned shutdown, holiday, or downtime.</div>`);
+  document.getElementById("insights").innerHTML=alerts.join("");
+}
+
+function exportMasterExcel(){
+  if(!FG.length){alert("Please upload data first.");return}
+  const wb=XLSX.utils.book_new(), client=document.getElementById("client").value, period=document.getElementById("period").value;
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([["Finished Goods Production Analysis"],["Client",client],["Period",period],["Rows",FG.length],["Prepared By","Maars & Associates"]]),"Cover");
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(FG.map(r=>({"Date":exDate(r.date),"CO-EX Roll":r.coex_r,"Lam Roll":r.lam_r,"CO-EX Pouch":r.coex_p,"Lam Pouch":r.lam_p,"PVC":r.pvc,"WPP":r.wpp,"Total ROLL":r.tot_roll,"Total POUCHING":r.tot_pouch,"Grand Total":r.tot_roll+r.tot_pouch,"Target CO-EX":r.tgt_coex,"Actual CO-EX":r.tot_coex,"Variance CO-EX":r.var_coex,"Target Laminate":r.tgt_lam,"Actual Laminate":r.tot_lam,"Variance Laminate":r.var_lam,"Target PVC":r.tgt_pvc,"Actual PVC":r.tot_pvc,"Variance PVC":r.var_pvc,"Target WPP":r.tgt_wpp,"Actual WPP":r.tot_wpp,"Variance WPP":r.var_wpp}))),"Daily Production");
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(monthlyRows()),"Monthly Summary");
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(chartData.target),"Target Achievement Chart");
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(chartData.trend),"Monthly Trend Chart");
+  Object.entries(chartData).forEach(([name,data])=>XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),`Chart - ${name}`));
+  const insightRows=[...document.querySelectorAll("#insights .alert")].map((el,i)=>[i+1,el.innerText]);
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([["No.","Insight"],...insightRows]),"Insights");
+  XLSX.writeFile(wb,`Barflex_Finished_Goods_Master_${period.replace(/\s+/g,"_")}.xlsx`);
+}
+function downloadBlob(blob,name){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},200)}
+function exportChart(id,name,type="png"){
+  const svg=document.querySelector(`#${id} svg`); if(!svg){alert("Chart not available.");return}
+  const text=new XMLSerializer().serializeToString(svg);
+  svgToPng(text,name);
+}
+function exportChartExcel(key){
+  if(!chartData[key]){alert("Chart data not available.");return}
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(chartData[key]),"Chart Data");
+  XLSX.writeFile(wb,`Barflex_${key}_chart_data.xlsx`);
+}
+function svgToPng(text,name){
+  const viewBox=(text.match(/viewBox="([^"]+)"/)||[])[1]?.split(/\s+/).map(Number)||[0,0,900,420];
+  const width=Number(text.match(/width="(\d+)"/)?.[1])||viewBox[2]||900;
+  const height=Number(text.match(/height="(\d+)"/)?.[1])||viewBox[3]||420;
+  const img=new Image(), url=URL.createObjectURL(new Blob([text],{type:"image/svg+xml"}));
+  img.onload=()=>{const c=document.createElement("canvas");c.width=width*2;c.height=height*2;const ctx=c.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,c.width,c.height);ctx.drawImage(img,0,0,c.width,c.height);c.toBlob(b=>b&&downloadBlob(b,`${name}.png`));URL.revokeObjectURL(url)};
+  img.src=url;
+}
+function exportAllCharts(){["processChart","splitChart","targetChart","trendChart"].forEach((id,i)=>setTimeout(()=>exportChart(id,["production_by_process","roll_vs_pouching","target_achievement","monthly_production_trend"][i],"png"),i*350))}
+function exportTableImage(cardId,name){
+  const node=document.getElementById(cardId), title=node.querySelector(".title")?.childNodes[0]?.textContent?.trim()||name;
+  const table=node.querySelector("table"); if(!table){alert("Table not available.");return}
+  const rows=[...table.rows].map(tr=>[...tr.cells].map(td=>td.innerText.trim()));
+  const colCount=Math.max(...rows.map(r=>r.length)), colW=145, rowH=28, width=Math.max(760,colCount*colW+36), height=Math.min(2200,70+rows.length*rowH);
+  const body=rows.slice(0,Math.floor((height-70)/rowH)).map((r,ri)=>r.map((cell,ci)=>{
+    const x=18+ci*colW,y=54+ri*rowH,isHead=ri===0,isTotal=/^TOTAL$/i.test(r[0]||"");
+    const fill=isHead||isTotal?"#17324d":ri%2?"#f7f9fd":"#fff", color=isHead||isTotal?"#fff":"#1f2d3d", weight=isHead||ci===0||isTotal?"800":"500";
+    return `<rect x="${x}" y="${y}" width="${colW}" height="${rowH}" fill="${fill}" stroke="#dce4ef"/><text x="${x+8}" y="${y+18}" font-size="11" font-weight="${weight}" fill="${color}">${esc(cell).slice(0,22)}</text>`;
+  }).join("")).join("");
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="${width}" height="${height}" fill="#fff"/><text x="18" y="28" font-size="16" font-weight="800" fill="#17324d">${esc(title)}</text><line x1="18" y1="42" x2="${width-18}" y2="42" stroke="#b9943f" stroke-width="2"/>${body}</svg>`;
+  svgToPng(svg,name);
+}
+function exportTableExcel(tableId,name){
+  const table=document.getElementById(tableId); if(!table){alert("Table not available.");return}
+  const rows=[...table.rows].map(tr=>[...tr.cells].map(td=>td.innerText.trim()));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"Table Data");
+  XLSX.writeFile(wb,`Barflex_${name}.xlsx`);
+}
+</script>
+</body>
+</html>
